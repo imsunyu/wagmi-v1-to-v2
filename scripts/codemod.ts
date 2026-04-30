@@ -8,18 +8,25 @@ import { rules } from "./rules";
 
 type Lang = JS | TS | TSX;
 
+function isValidPattern(p: unknown): p is string {
+  return typeof p === "string" && p.trim().length > 0;
+}
+
 const codemod: Codemod<Lang> = async (root) => {
   const rootNode = root.root();
   const edits: any[] = [];
 
   for (const rule of rules) {
     if (rule.match?.type === "ImportSpecifier") {
+      const pattern = rule.match.imported;
+      if (!isValidPattern(pattern)) continue;
+
       const specifiers = rootNode.findAll({
         rule: {
           kind: "import_specifier",
           has: {
             field: "name",
-            pattern: rule.match.imported,
+            pattern,
           },
         },
       });
@@ -38,9 +45,7 @@ const codemod: Codemod<Lang> = async (root) => {
                   .text()
                   .replace(
                     /from\s+["'][^"']+["']/,
-                    `from "${String(
-                      rule.transform.replaceImportSource
-                    )}"`
+                    `from "${String(rule.transform.replaceImportSource)}"`
                   )
               )
             );
@@ -52,12 +57,15 @@ const codemod: Codemod<Lang> = async (root) => {
 
   for (const rule of rules) {
     if (rule.match?.type === "CallExpression") {
+      const pattern = rule.match.callee;
+      if (!isValidPattern(pattern)) continue;
+
       const calls = rootNode.findAll({
         rule: {
           kind: "call_expression",
           has: {
             field: "function",
-            pattern: rule.match.callee,
+            pattern,
           },
         },
       });
@@ -66,15 +74,11 @@ const codemod: Codemod<Lang> = async (root) => {
         let text = node.text();
 
         if ("renameCallee" in rule.transform) {
-          text =
-            String(rule.transform.renameCallee) +
-            text.slice(rule.match.callee.length);
+          text = String(rule.transform.renameCallee) + text.slice(pattern.length);
         }
 
         if ("objectKeyMap" in rule.transform) {
-          for (const [from, to] of Object.entries(
-            rule.transform.objectKeyMap
-          )) {
+          for (const [from, to] of Object.entries(rule.transform.objectKeyMap)) {
             text = text.replace(
               new RegExp(`\\b${from}\\b`, "g"),
               String(to)
@@ -94,10 +98,13 @@ const codemod: Codemod<Lang> = async (root) => {
       rule.match?.type === "Identifier" ||
       rule.match?.type === "JSXIdentifier"
     ) {
+      const pattern = rule.match.name;
+      if (!isValidPattern(pattern)) continue;
+
       const nodes = rootNode.findAll({
         rule: {
           kind: "identifier",
-          pattern: rule.match.name,
+          pattern,
         },
       });
 
@@ -111,12 +118,15 @@ const codemod: Codemod<Lang> = async (root) => {
 
   for (const rule of rules) {
     if (rule.match?.type === "ObjectProperty") {
+      const pattern = rule.match.key;
+      if (!isValidPattern(pattern)) continue;
+
       const props = rootNode.findAll({
         rule: {
           kind: "pair",
           has: {
             field: "key",
-            pattern: rule.match.key,
+            pattern,
           },
         },
       });
@@ -128,7 +138,7 @@ const codemod: Codemod<Lang> = async (root) => {
               node
                 .text()
                 .replace(
-                  new RegExp(`^${rule.match.key}\\b`),
+                  new RegExp(`^${pattern}\\b`),
                   String(rule.transform.replaceKey)
                 )
             )
@@ -140,12 +150,15 @@ const codemod: Codemod<Lang> = async (root) => {
 
   for (const rule of rules) {
     if (rule.match?.type === "NewExpression") {
+      const pattern = rule.match.callee;
+      if (!isValidPattern(pattern)) continue;
+
       const news = rootNode.findAll({
         rule: {
           kind: "new_expression",
           has: {
             field: "constructor",
-            pattern: rule.match.callee,
+            pattern,
           },
         },
       });
@@ -159,7 +172,7 @@ const codemod: Codemod<Lang> = async (root) => {
               node
                 .text()
                 .replace(
-                  new RegExp(`^new\\s+${rule.match.callee}`),
+                  new RegExp(`^new\\s+${pattern}`),
                   String(rule.transform.renameCallee)
                 )
             )
@@ -171,24 +184,24 @@ const codemod: Codemod<Lang> = async (root) => {
 
   for (const rule of rules) {
     if (rule.transform?.annotate) {
+      const pattern =
+        rule.match?.callee ??
+        rule.match?.imported ??
+        rule.match?.name;
+
+      if (!isValidPattern(pattern)) continue;
+
       const nodes = rootNode.findAll({
         rule: {
-          pattern:
-            rule.match?.callee ??
-            rule.match?.imported ??
-            rule.match?.name ??
-            "",
+          pattern,
         },
       });
 
       for (const node of nodes) {
         edits.push(
           node.replace(
-            `/* ${String(
-              rule.transform.annotate.severity
-            ).toUpperCase()}: ${String(
-              rule.transform.annotate.message
-            )} */\n${node.text()}`
+            `/* ${String(rule.transform.annotate.severity).toUpperCase()}: ${rule.transform.annotate.message
+            } */\n${node.text()}`
           )
         );
       }
