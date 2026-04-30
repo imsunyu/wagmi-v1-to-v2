@@ -9,8 +9,7 @@ nodes:
     steps:
       - name: "Scan matching typescript files and apply fixes"
         js-ast-grep:
-          js_file: ./scripts/codemod.ts
-          base_path: "."
+          js_file: scripts/codemod.ts
           language: "typescript"
           include:
             - "**/*.{ts,tsx,mts,cts}"
