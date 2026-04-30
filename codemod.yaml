@@ -1,0 +1,22 @@
+schema_version: "1.0"
+name: "wagmi-v1-to-v2"
+version: "0.1.0"
+description: "Migrate wagmi v1 projects to wagmi v2 with safe transforms and review annotations."
+author: "Yu Sun"
+license: "MIT"
+workflow: "workflow.yaml"
+category: "migration"
+
+targets:
+  languages: ["typescript"]
+
+keywords:
+  - wagmi
+  - migration
+  - web3
+  - ethereum
+  - typescript
+
+registry:
+  access: "public"
+  visibility: "public"
