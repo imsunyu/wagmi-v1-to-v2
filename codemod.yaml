@@ -1,6 +1,6 @@
 schema_version: "1.0"
 name: "@imsunyu/wagmi-v1-to-v2"
-version: "0.1.1"
+version: "0.1.2"
 description: "Migrate wagmi v1 projects to wagmi v2 with safe transforms and review annotations."
 author: "Yu Sun"
 license: "MIT"
